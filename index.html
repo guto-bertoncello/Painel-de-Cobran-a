@@ -1,0 +1,479 @@
+<!doctype html>
+<html lang="pt-BR">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Painel de Cobrança</title>
+    <link rel="stylesheet" href="./assets/styles.css" />
+    <script defer src="./assets/vendor/xlsx.full.min.js"></script>
+    <script defer src="./assets/vendor/chart.umd.min.js"></script>
+    <script type="module" defer src="./assets/app.js"></script>
+  </head>
+  <body>
+    <div class="app-shell">
+      <aside class="sidebar">
+        <div class="brand">
+          <div class="brand__badge">C</div>
+          <div>
+            <p class="eyebrow">Operação local</p>
+            <h1>Painel de Cobrança</h1>
+          </div>
+        </div>
+
+        <nav class="sidebar__nav">
+          <button class="nav-link is-active" data-target="dashboard">
+            <span class="nav-link__icon"></span>
+            <span>Lar</span>
+          </button>
+          <button class="nav-link" data-target="filters">
+            <span class="nav-link__icon"></span>
+            <span>Filtros</span>
+          </button>
+          <button class="nav-link" data-target="actions">
+            <span class="nav-link__icon"></span>
+            <span>Gráfico de ações</span>
+          </button>
+          <button class="nav-link" data-target="novation">
+            <span class="nav-link__icon"></span>
+            <span>Novação</span>
+          </button>
+          <button class="nav-link" data-target="agents">
+            <span class="nav-link__icon"></span>
+            <span>Relatório de agentes</span>
+          </button>
+        </nav>
+
+        <div class="sidebar__footer">
+          <div class="storage-card">
+            <p class="eyebrow">Resumo local</p>
+            <strong id="sidebar-main-status">Nenhuma base importada</strong>
+            <span id="sidebar-main-subtitle">Importe a planilha principal para começar.</span>
+          </div>
+          <div class="storage-card">
+            <p class="eyebrow">Novação</p>
+            <strong id="sidebar-novacao-status">Sem arquivo salvo</strong>
+            <span id="sidebar-novacao-subtitle">A tela de novação usa uma importação separada.</span>
+          </div>
+        </div>
+      </aside>
+
+      <div class="workspace">
+        <header class="topbar">
+          <div class="search-shell">
+            <span class="search-shell__icon"></span>
+            <div>
+              <strong>Digite para pesquisar</strong>
+              <span>Use a navegação lateral para alternar entre as cinco telas pedidas.</span>
+            </div>
+          </div>
+          <div class="topbar__meta">
+            <div class="meta-chip">
+              <span class="meta-chip__dot"></span>
+              <span id="current-month-label">Mês atual</span>
+            </div>
+            <div class="meta-chip">
+              <span>Persistência local ativa</span>
+            </div>
+          </div>
+        </header>
+
+        <main class="content">
+          <section class="view is-active" data-section="dashboard">
+            <div class="hero-card">
+              <div class="hero-card__heading">
+                <p class="eyebrow">Tela 1</p>
+                <h2>Importação, leitura e exportação da base principal</h2>
+                <p class="muted">
+                  Importe arquivos Excel, CSV ou TSV, remova CPF duplicado automaticamente,
+                  salve a base localmente para uso futuro e exporte a nova planilha já tratada.
+                </p>
+              </div>
+
+              <div class="hero-card__box">
+                <div class="file-box">
+                  <label class="file-box__drop" for="main-file-input">
+                    <span class="file-box__label">Importar arquivo principal</span>
+                    <strong id="main-file-name">Nenhum arquivo carregado</strong>
+                    <span id="main-file-detail">Aceita .xlsx, .xls, .csv e .tsv</span>
+                  </label>
+                  <input id="main-file-input" type="file" accept=".xlsx,.xls,.csv,.tsv" hidden />
+                </div>
+
+                <div class="hero-card__actions">
+                  <button id="main-import-trigger" class="button button--ghost">
+                    Selecionar arquivo
+                  </button>
+                  <button id="main-export-button" class="button button--primary">
+                    Exportar planilha
+                  </button>
+                  <button id="main-clear-button" class="button button--secondary">
+                    Apagar arquivo salvo
+                  </button>
+                </div>
+              </div>
+
+              <div class="hero-card__toolbar">
+                <button class="chip-link" data-jump="filters">Abrir filtros</button>
+                <button class="chip-link" data-jump="actions">Ver gráfico de ações</button>
+                <button class="chip-link" data-jump="agents">Abrir relatório de agentes</button>
+                <button class="chip-link" data-jump="novation">Ir para novação</button>
+              </div>
+            </div>
+
+            <div class="stats-grid">
+              <article class="stat-card">
+                <p>Linhas importadas</p>
+                <strong id="stat-imported">0</strong>
+                <span id="stat-imported-note">Sem base ativa.</span>
+              </article>
+              <article class="stat-card">
+                <p>Após remover duplicados</p>
+                <strong id="stat-deduped">0</strong>
+                <span id="stat-deduped-note">CPF é deduplicado mantendo a primeira ocorrência.</span>
+              </article>
+              <article class="stat-card">
+                <p>Ações identificadas</p>
+                <strong id="stat-actions">0</strong>
+                <span id="stat-actions-note">A lista é usada no filtro e no gráfico.</span>
+              </article>
+              <article class="stat-card">
+                <p>Operadores da última simulação</p>
+                <strong id="stat-operators">0</strong>
+                <span id="stat-operators-note">Atualizado quando você salva os filtros.</span>
+              </article>
+            </div>
+
+            <div class="panel-grid">
+              <article class="panel-card panel-card--wide">
+                <div class="panel-card__header">
+                  <div>
+                    <p class="eyebrow">Amostra da base</p>
+                    <h3>Prévia da planilha tratada</h3>
+                  </div>
+                  <span class="badge" id="preview-badge">Sem dados</span>
+                </div>
+                <div class="table-shell">
+                  <table>
+                    <thead>
+                      <tr>
+                        <th>CPF</th>
+                        <th>Cliente</th>
+                        <th>Contrato</th>
+                        <th>Atraso</th>
+                        <th>Valor vencido</th>
+                        <th>Valor risco</th>
+                        <th>Telefone</th>
+                        <th>Defasagem</th>
+                        <th>Ação</th>
+                      </tr>
+                    </thead>
+                    <tbody id="preview-table-body">
+                      <tr>
+                        <td colspan="9" class="empty-row">
+                          Importe a base principal para visualizar a prévia.
+                        </td>
+                      </tr>
+                    </tbody>
+                  </table>
+                </div>
+              </article>
+
+              <article class="panel-card">
+                <div class="panel-card__header">
+                  <div>
+                    <p class="eyebrow">Arquivo salvo</p>
+                    <h3>Leitura futura</h3>
+                  </div>
+                </div>
+                <dl class="info-list">
+                  <div>
+                    <dt>Nome</dt>
+                    <dd id="main-saved-name">Nenhum arquivo salvo</dd>
+                  </div>
+                  <div>
+                    <dt>Última importação</dt>
+                    <dd id="main-saved-date">-</dd>
+                  </div>
+                  <div>
+                    <dt>Status</dt>
+                    <dd id="main-saved-status">Aguardando importação</dd>
+                  </div>
+                </dl>
+                <p class="hint">
+                  “Apagar arquivo salvo” remove apenas a base armazenada pelo site, sem apagar o
+                  arquivo original do seu computador.
+                </p>
+              </article>
+            </div>
+          </section>
+
+          <section class="view" data-section="filters">
+            <div class="section-head">
+              <div>
+                <p class="eyebrow">Tela 2</p>
+                <h2>Filtros e resumo da seleção</h2>
+              </div>
+              <button id="save-filters-button" class="button button--primary">Salvar</button>
+            </div>
+
+            <div class="panel-grid">
+              <article class="panel-card panel-card--wide">
+                <div class="panel-card__header">
+                  <div>
+                    <p class="eyebrow">Filtros numéricos</p>
+                    <h3>Refine a base antes de exportar</h3>
+                  </div>
+                </div>
+
+                <form id="filters-form" class="filters-form" autocomplete="off">
+                  <div class="field-grid">
+                    <label class="field">
+                      <span>Tempo em atraso mínimo</span>
+                      <input id="tempo-min-input" type="number" min="0" placeholder="Ex.: 15" />
+                    </label>
+                    <label class="field">
+                      <span>Tempo em atraso máximo</span>
+                      <input id="tempo-max-input" type="number" min="0" placeholder="Ex.: 120" />
+                    </label>
+                    <label class="field">
+                      <span>Valor vencido</span>
+                      <select id="valor-vencido-select">
+                        <option value="todos">Todos</option>
+                        <option value="altos">Altos</option>
+                        <option value="medios">Médios</option>
+                        <option value="baixos">Baixos</option>
+                      </select>
+                    </label>
+                    <label class="field">
+                      <span>Valor risco</span>
+                      <select id="valor-risco-select">
+                        <option value="todos">Todos</option>
+                        <option value="altos">Altos</option>
+                        <option value="medios">Médios</option>
+                        <option value="baixos">Baixos</option>
+                      </select>
+                    </label>
+                    <label class="field">
+                      <span>Hot</span>
+                      <select id="hot-select">
+                        <option value="todos">Indiferente</option>
+                        <option value="sim">Sim</option>
+                        <option value="nao">Não</option>
+                      </select>
+                    </label>
+                    <label class="field">
+                      <span>Operadores</span>
+                      <input id="operadores-input" type="number" min="1" step="1" value="1" />
+                    </label>
+                  </div>
+
+                  <label class="toggle-field">
+                    <input id="padrao-toggle" type="checkbox" />
+                    <span>Aplicar filtro padrão com as remoções automáticas descritas nos requisitos</span>
+                  </label>
+
+                  <div class="panel-card__header panel-card__header--spaced">
+                    <div>
+                      <p class="eyebrow">Ações</p>
+                      <h3>Selecione quais entram na exportação</h3>
+                    </div>
+                    <span class="hint-inline">
+                      Cada ação tem faixa própria de defasagem: mínimo usa “&gt;” e máximo usa “&lt;”.
+                    </span>
+                  </div>
+
+                  <div id="actions-filter-grid" class="actions-grid"></div>
+                </form>
+              </article>
+
+              <div class="stack-grid">
+                <article class="panel-card">
+                  <div class="panel-card__header">
+                    <div>
+                      <p class="eyebrow">Amostra dos filtros inseridos</p>
+                      <h3>Resumo salvo</h3>
+                    </div>
+                  </div>
+                  <div id="saved-summary" class="summary-shell">
+                    Clique em <strong>Salvar</strong> para calcular o total de clientes e a divisão
+                    por operadores.
+                  </div>
+                </article>
+
+                <article class="panel-card">
+                  <div class="panel-card__header">
+                    <div>
+                      <p class="eyebrow">Como utilizar</p>
+                      <h3>Leitura rápida</h3>
+                    </div>
+                  </div>
+                  <ul class="helper-list">
+                    <li>Importe a base principal na tela “Lar”.</li>
+                    <li>Configure os filtros e clique em “Salvar”.</li>
+                    <li>Veja a contagem total e a distribuição por abas de operadores.</li>
+                    <li>Use “Exportar planilha” para gerar o arquivo final sem as colunas removidas.</li>
+                    <li>O gráfico de ações atualiza automaticamente com a seleção da tela própria.</li>
+                  </ul>
+                </article>
+              </div>
+            </div>
+          </section>
+
+          <section class="view" data-section="actions">
+            <div class="section-head">
+              <div>
+                <p class="eyebrow">Tela 3</p>
+                <h2>Gráfico de pizza por ação</h2>
+              </div>
+              <span class="badge" id="chart-source-badge">Base importada</span>
+            </div>
+
+            <div class="panel-grid">
+              <article class="panel-card panel-card--wide">
+                <div class="panel-card__header">
+                  <div>
+                    <p class="eyebrow">Visualização</p>
+                    <h3>Distribuição das ações da coluna L</h3>
+                  </div>
+                </div>
+                <div class="chart-shell">
+                  <canvas id="actions-chart"></canvas>
+                </div>
+              </article>
+
+              <article class="panel-card">
+                <div class="panel-card__header">
+                  <div>
+                    <p class="eyebrow">Seleção</p>
+                    <h3>Escolha o que aparece</h3>
+                  </div>
+                </div>
+                <div id="chart-actions-grid" class="actions-list"></div>
+              </article>
+            </div>
+          </section>
+
+          <section class="view" data-section="novation">
+            <div class="section-head">
+              <div>
+                <p class="eyebrow">Tela 4</p>
+                <h2>Novação</h2>
+              </div>
+            </div>
+
+            <div class="panel-grid">
+              <article class="panel-card panel-card--wide">
+                <div class="panel-card__header">
+                  <div>
+                    <p class="eyebrow">Importar títulos em cobrança</p>
+                    <h3>Base dedicada para contagem de novação</h3>
+                  </div>
+                </div>
+
+                <div class="hero-card__box">
+                  <div class="file-box">
+                    <label class="file-box__drop" for="novacao-file-input">
+                      <span class="file-box__label">Importar títulos em cobrança</span>
+                      <strong id="novacao-file-name">Nenhum arquivo carregado</strong>
+                      <span id="novacao-file-detail">A base fica salva localmente para futuras leituras</span>
+                    </label>
+                    <input id="novacao-file-input" type="file" accept=".xlsx,.xls,.csv,.tsv" hidden />
+                  </div>
+
+                  <div class="hero-card__actions">
+                    <button id="novacao-import-trigger" class="button button--ghost">
+                      Selecionar arquivo
+                    </button>
+                    <button id="novacao-clear-button" class="button button--secondary">
+                      Apagar arquivo salvo
+                    </button>
+                  </div>
+                </div>
+
+                <div class="stats-grid stats-grid--compact">
+                  <article class="stat-card">
+                    <p>Total NOV</p>
+                    <strong id="novacao-total-nov">0</strong>
+                    <span id="novacao-total-note">Linhas com tipo NOV na base importada.</span>
+                  </article>
+                  <article class="stat-card">
+                    <p>Valor em atraso</p>
+                    <strong id="novacao-atraso-total">R$ 0,00</strong>
+                    <span id="novacao-atraso-note">Somatório com atraso maior que zero no mês atual.</span>
+                  </article>
+                  <article class="stat-card">
+                    <p>Valor a receber</p>
+                    <strong id="novacao-receber-total">R$ 0,00</strong>
+                    <span id="novacao-receber-note">Somatório com atraso menor que um no mês atual.</span>
+                  </article>
+                </div>
+              </article>
+
+              <article class="panel-card">
+                <div class="panel-card__header">
+                  <div>
+                    <p class="eyebrow">Gráfico de pizza</p>
+                    <h3>Novação do mês atual</h3>
+                  </div>
+                </div>
+                <div class="chart-shell chart-shell--compact">
+                  <canvas id="novacao-chart"></canvas>
+                </div>
+                <p class="hint" id="novacao-reference-note">
+                  A verificação do mês atual é automática e usa a data local do navegador.
+                </p>
+              </article>
+            </div>
+          </section>
+
+          <section class="view" data-section="agents">
+            <div class="section-head">
+              <div>
+                <p class="eyebrow">Tela 5</p>
+                <h2>Relatório de cada agente</h2>
+              </div>
+            </div>
+
+            <div class="panel-grid">
+              <article class="panel-card panel-card--wide">
+                <div class="panel-card__header">
+                  <div>
+                    <p class="eyebrow">Operadores</p>
+                    <h3>Acionamentos e acordos por agente</h3>
+                  </div>
+                </div>
+                <div id="agents-list" class="agents-grid">
+                  <div class="empty-state">
+                    Importe a base principal para gerar o relatório por agente.
+                  </div>
+                </div>
+              </article>
+
+              <article class="panel-card">
+                <div class="panel-card__header">
+                  <div>
+                    <p class="eyebrow">Regra aplicada</p>
+                    <h3>Contagem</h3>
+                  </div>
+                </div>
+                <ul class="helper-list">
+                  <li>ACO, ACR e ACP entram em “Acordos”.</li>
+                  <li>Qualquer outra ação entra em “Acionamentos”.</li>
+                  <li>O nome exibido usa o número encontrado na coluna M.</li>
+                </ul>
+              </article>
+            </div>
+          </section>
+        </main>
+      </div>
+    </div>
+
+    <div id="toast" class="toast" aria-live="polite"></div>
+    <div id="loading-overlay" class="loading-overlay" hidden>
+      <div class="loading-card">
+        <div class="spinner"></div>
+        <strong id="loading-text">Processando arquivo...</strong>
+      </div>
+    </div>
+  </body>
+</html>
